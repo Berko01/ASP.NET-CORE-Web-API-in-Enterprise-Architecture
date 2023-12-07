@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Business.Abstract;
+using Core.Utilities.Results;
 using DataAccess.Abstract;
 using Entities.Concrete;
 
@@ -13,40 +14,47 @@ namespace Business.Concrete
 	{
 		private IProductDal _productDal;
 
+
 		public ProductManager(IProductDal productDal)
 		{
 			_productDal = productDal;
 		}
 
-		public List<Product> GetList()
+		public IDataResult<Product> GetById(int productId)
 		{
-			return _productDal.GetList().ToList();
+			return new SuccessDataResult<Product>(_productDal.Get(p => p.ProductId == productId))  ;
 		}
 
-		public List<Product> GetListByCategory(int categoryId)
+		public IDataResult<List<Product>> GetList()
 		{
-			return _productDal.GetList(p => p.CategoryId == categoryId).ToList();
+			return new SuccessDataResult<List<Product>>(_productDal.GetList().ToList());
 		}
 
-		public void Add(Product product)
+		public IDataResult<List<Product>> GetListByCategory(int categoryId)
 		{
-			//Business Codes
+			return new SuccessDataResult<List<Product>>(_productDal.GetList(p => p.CategoryId == categoryId).ToList());
+		}
+
+		public IResult Add(Product product)
+		{
 			_productDal.Add(product);
+			//Business Codes
+			return new SuccessResult("Urun basariyla kaydedildi.");
 		}
 
-		public void Delete(Product product)
+		public IResult Delete(Product product)
 		{
 			_productDal.Delete(product);
+			return new SuccessResult("Urun basariyla silindi.");
 		}
 
-		public void Update(Product product)
+		public IResult Update(Product product)
 		{
 			_productDal.Update(product);
+
+			return new SuccessResult("Urun basariyla guncellendi.");
 		}
 
-		public Product GetById(int productId)
-		{
-			return _productDal.Get(p => p.ProductId == productId);
-		}
+
 	}
 }
