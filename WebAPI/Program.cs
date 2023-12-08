@@ -4,7 +4,11 @@ using Autofac;
 using Autofac.Core;
 using Autofac.Extensions.DependencyInjection;
 using Business.DependencyResolvers.AutoFac;
+using Core.Utilities.Security.Encription;
+using Core.Utilities.Security.Jwt;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,10 +21,42 @@ builder.Host.ConfigureContainer<ContainerBuilder>(
 	builder => builder.RegisterModule(new AutoFacBusinessModule()));
 
 
+//Cors
+builder.Services.AddCors(options =>
+	options.AddPolicy("AllowOrigin",
+		builder => builder.WithOrigins("http://localhost:3000")));
+
+
+
+//Get Token Options
+var configuration = builder.Configuration;
+var tokenOptions = new TokenOptions();
+configuration.GetSection("TokenOptions").Bind(tokenOptions);
+
+//Json Web Token Service
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+	.AddJwtBearer(options =>
+		{
+			options.TokenValidationParameters = new TokenValidationParameters
+			{
+				ValidateIssuer = true,
+				ValidateAudience = true,
+				ValidateLifetime = true,
+				ValidIssuer = tokenOptions.Issuer,
+				ValidAudience = tokenOptions.Audience,
+				ValidateIssuerSigningKey = true,
+				IssuerSigningKey = SecurityKeyHelper.CreateSecurityKey(tokenOptions.SecurityKey)
+
+			};
+		});
+
 // Add services to the container.
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
+
+
 
 
 
@@ -35,16 +71,20 @@ if (!app.Environment.IsDevelopment())
 	app.UseHsts();
 }
 
+//Cors
+// Cors
+app.UseCors(builder => builder.WithOrigins("http://localhost:3000").AllowAnyHeader());
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+
+// UseAuthentication ve UseAuthorization middleware'lerini ekleme sýrasýný deðiþtir
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
 app.MapRazorPages();
-
-
 
 app.Run();
 
